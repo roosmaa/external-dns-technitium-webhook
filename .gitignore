@@ -1,0 +1,4 @@
+.aider*
+.idea/
+.env
+target/
