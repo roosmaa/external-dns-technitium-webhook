@@ -1,9 +1,9 @@
 FROM rust:1.83.0-alpine AS builder
 RUN apk add --no-cache \
     musl-dev \
-    openssl-dev \
+    openssl-libs-static openssl-dev \
     pkgconfig
-WORKDIR /usr/src/zfs-http-query
+WORKDIR /usr/src/external-dns-technitium-webhook
 COPY . .
 RUN cargo install --path .
 
