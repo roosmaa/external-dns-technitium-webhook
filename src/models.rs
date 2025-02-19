@@ -14,6 +14,7 @@ pub struct Filters {
 pub struct Endpoint {
     #[serde(rename = "dnsName")]
     pub dns_name: String,
+    #[serde(default)]
     pub targets: Vec<String>,
     #[serde(rename = "recordType")]
     pub record_type: String,
@@ -21,11 +22,14 @@ pub struct Endpoint {
     #[serde(rename = "recordTTL")]
     pub record_ttl: Option<u32>,
     #[serde(skip_serializing_if = "is_default")]
+    #[serde(default)]
     #[serde(rename = "setIdentifier")]
     pub set_identifier: String,
     #[serde(skip_serializing_if = "is_default")]
+    #[serde(default)]
     pub labels: HashMap<String, String>,
     #[serde(skip_serializing_if = "is_default")]
+    #[serde(default)]
     #[serde(rename = "providerSpecific")]
     pub provider_specific: Vec<ProviderSpecificProperty>,
 }
@@ -67,5 +71,20 @@ mod tests {
             "recordTTL": 300,
         });
         assert_eq!(serialized, expected);
+    }
+
+    #[test]
+    fn test_endpoint_deserialization() {
+        let json = json!({
+            "dnsName": "example.com",
+            "targets": ["1.2.3.4"],
+            "recordType": "A",
+            "recordTTL": 300,
+        });
+        let endpoint: Endpoint = serde_json::from_value(json).unwrap();
+        assert_eq!(endpoint.dns_name, "example.com");
+        assert_eq!(endpoint.targets, vec!["1.2.3.4".to_string()]);
+        assert_eq!(endpoint.record_type, "A");
+        assert_eq!(endpoint.record_ttl, Some(300));
     }
 }
