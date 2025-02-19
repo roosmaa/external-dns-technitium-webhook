@@ -13,11 +13,15 @@ pub struct Endpoint {
     pub targets: Vec<String>,
     #[serde(rename = "recordType")]
     pub record_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "recordTTL")]
     pub record_ttl: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "setIdentifier")]
     pub set_identifier: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub labels: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "providerSpecific")]
     pub provider_specific: Option<Vec<ProviderSpecificProperty>>,
 }
