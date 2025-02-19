@@ -10,7 +10,7 @@ pub struct Filters {
     pub filters: Vec<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone, Default)]
 pub struct Endpoint {
     #[serde(rename = "dnsName")]
     pub dns_name: String,
@@ -42,12 +42,22 @@ pub struct ProviderSpecificProperty {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Changes {
-    pub create: Option<Vec<Endpoint>>,
-    #[serde(rename = "updateOld")]
-    pub update_old: Option<Vec<Endpoint>>,
-    #[serde(rename = "updateNew")]
-    pub update_new: Option<Vec<Endpoint>>,
-    pub delete: Option<Vec<Endpoint>>,
+    #[serde(skip_serializing_if = "is_default")]
+    #[serde(default)]
+    #[serde(alias = "Create")]
+    pub create: Vec<Endpoint>,
+    #[serde(skip_serializing_if = "is_default")]
+    #[serde(default)]
+    #[serde(rename = "updateOld", alias = "UpdateOld")]
+    pub update_old: Vec<Endpoint>,
+    #[serde(skip_serializing_if = "is_default")]
+    #[serde(default)]
+    #[serde(rename = "updateNew", alias = "UpdateNew")]
+    pub update_new: Vec<Endpoint>,
+    #[serde(skip_serializing_if = "is_default")]
+    #[serde(default)]
+    #[serde(alias = "Delete")]
+    pub delete: Vec<Endpoint>,
 }
 
 #[cfg(test)]
@@ -82,6 +92,25 @@ mod tests {
             "recordTTL": 300,
         });
         let endpoint: Endpoint = serde_json::from_value(json).unwrap();
+        assert_eq!(endpoint.dns_name, "example.com");
+        assert_eq!(endpoint.targets, vec!["1.2.3.4".to_string()]);
+        assert_eq!(endpoint.record_type, "A");
+        assert_eq!(endpoint.record_ttl, Some(300));
+    }
+
+    #[test]
+    fn test_changes_deserialization() {
+        let json = json!({
+            "Create": [{
+                "dnsName": "example.com",
+                "targets": ["1.2.3.4"],
+                "recordType": "A",
+                "recordTTL": 300,
+            }]
+        });
+        let changes: Changes = serde_json::from_value(json).unwrap();
+        assert_eq!(changes.create.len(), 1);
+        let endpoint = &changes.create[0];
         assert_eq!(endpoint.dns_name, "example.com");
         assert_eq!(endpoint.targets, vec!["1.2.3.4".to_string()]);
         assert_eq!(endpoint.record_type, "A");

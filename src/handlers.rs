@@ -139,15 +139,13 @@ pub async fn apply_record(
 
     let deletions = changes
         .delete
-        .unwrap_or_default()
         .into_iter()
-        .chain(changes.update_old.unwrap_or_default().into_iter())
+        .chain(changes.update_old.into_iter())
         .collect::<Vec<_>>();
     let additions = changes
         .create
-        .unwrap_or_default()
         .into_iter()
-        .chain(changes.update_new.unwrap_or_default().into_iter())
+        .chain(changes.update_new.into_iter())
         .collect::<Vec<_>>();
 
     if deletions.is_empty() && additions.is_empty() {
