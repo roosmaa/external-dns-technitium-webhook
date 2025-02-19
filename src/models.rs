@@ -37,11 +37,6 @@ pub struct ProviderSpecificProperty {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Endpoints {
-    pub endpoints: Vec<Endpoint>,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Changes {
     pub create: Option<Vec<Endpoint>>,
     #[serde(rename = "updateOld")]

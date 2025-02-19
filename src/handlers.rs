@@ -1,4 +1,4 @@
-use crate::models::{Changes, Endpoint, Endpoints, Filters};
+use crate::models::{Changes, Endpoint, Filters};
 use crate::technitium::RecordData;
 use crate::{technitium, AppError, AppState};
 use axum::extract::State;
@@ -110,7 +110,7 @@ pub async fn get_records(
 
     debug!("Found {} endpoints", endpoints.len());
 
-    Ok(ExtDnsJson(Endpoints { endpoints }))
+    Ok(ExtDnsJson(endpoints))
 }
 
 /// Executes the AdjustEndpoints method.
@@ -119,7 +119,7 @@ pub async fn get_records(
 /// after applying business rules.
 pub async fn adjust_endpoints(
     State(app_state): State<Arc<AppState>>,
-    Json(endpoints): Json<Endpoints>,
+    Json(endpoints): Json<Vec<Endpoint>>,
 ) -> Result<impl IntoResponse, AppError> {
     app_state.ensure_ready().await?;
 
