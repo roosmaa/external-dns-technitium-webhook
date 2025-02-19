@@ -8,5 +8,6 @@ COPY . .
 RUN cargo install --path .
 
 FROM scratch
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /usr/local/cargo/bin/external-dns-technitium-webhook /external-dns-technitium-webhook
 CMD ["/external-dns-technitium-webhook"]
