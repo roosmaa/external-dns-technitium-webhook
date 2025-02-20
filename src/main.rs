@@ -9,6 +9,7 @@ use std::time::Duration;
 use tokio::signal;
 use tokio::sync::RwLock;
 use tokio::time::sleep;
+use tower_http::trace::TraceLayer;
 use tracing::{debug, error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -183,6 +184,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/records", get(handlers::get_records))
         .route("/adjustendpoints", post(handlers::adjust_endpoints))
         .route("/records", post(handlers::apply_record))
+        .layer(TraceLayer::new_for_http())
         .with_state(Arc::clone(&app_state));
 
     let listener = tokio::net::TcpListener::bind(&app_state.config.address())
