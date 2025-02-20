@@ -1,14 +1,15 @@
 use app::{AppError, AppState};
 use axum::{
-    routing::{get, post},
-    Router,
     body::{Body, Bytes},
     extract::Request,
     http::StatusCode,
     middleware::{self, Next},
     response::{IntoResponse, Response},
+    routing::{get, post},
+    Router,
 };
 use config::Config;
+use http_body_util::BodyExt;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::signal;
@@ -17,8 +18,6 @@ use tokio::time::sleep;
 use tower_http::trace::TraceLayer;
 use tracing::{debug, error, info};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-use http_body_util::BodyExt;
-
 
 mod app;
 mod config;
@@ -163,8 +162,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // initialize tracing
     tracing_subscriber::registry()
         .with(
-            tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| format!("{}=debug", env!("CARGO_CRATE_NAME")).into()),
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+                format!("{}=debug,tower_http=debug", env!("CARGO_CRATE_NAME")).into()
+            }),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
@@ -270,7 +270,7 @@ where
     };
 
     if let Ok(body) = std::str::from_utf8(&bytes) {
-        tracing::debug!("{direction} body = {body:?}");
+        debug!("{direction} body = {body:?}");
     }
 
     Ok(bytes)
