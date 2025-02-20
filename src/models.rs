@@ -40,24 +40,16 @@ pub struct ProviderSpecificProperty {
     pub value: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct Changes {
-    #[serde(skip_serializing_if = "is_default")]
-    #[serde(default)]
     #[serde(alias = "Create")]
-    pub create: Vec<Endpoint>,
-    #[serde(skip_serializing_if = "is_default")]
-    #[serde(default)]
+    pub create: Option<Vec<Endpoint>>,
     #[serde(rename = "updateOld", alias = "UpdateOld")]
-    pub update_old: Vec<Endpoint>,
-    #[serde(skip_serializing_if = "is_default")]
-    #[serde(default)]
+    pub update_old: Option<Vec<Endpoint>>,
     #[serde(rename = "updateNew", alias = "UpdateNew")]
-    pub update_new: Vec<Endpoint>,
-    #[serde(skip_serializing_if = "is_default")]
-    #[serde(default)]
+    pub update_new: Option<Vec<Endpoint>>,
     #[serde(alias = "Delete")]
-    pub delete: Vec<Endpoint>,
+    pub delete: Option<Vec<Endpoint>>,
 }
 
 #[cfg(test)]
@@ -109,8 +101,9 @@ mod tests {
             }]
         });
         let changes: Changes = serde_json::from_value(json).unwrap();
-        assert_eq!(changes.create.len(), 1);
-        let endpoint = &changes.create[0];
+        let create = changes.create.unwrap_or_default();
+        assert_eq!(create.len(), 1);
+        let endpoint = &create[0];
         assert_eq!(endpoint.dns_name, "example.com");
         assert_eq!(endpoint.targets, vec!["1.2.3.4".to_string()]);
         assert_eq!(endpoint.record_type, "A");
