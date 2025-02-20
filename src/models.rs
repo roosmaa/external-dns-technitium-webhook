@@ -98,7 +98,10 @@ mod tests {
                 "targets": ["1.2.3.4"],
                 "recordType": "A",
                 "recordTTL": 300,
-            }]
+            }],
+            "UpdateOld": null,
+            "UpdateNew": null,
+            "Delete": null,
         });
         let changes: Changes = serde_json::from_value(json).unwrap();
         let create = changes.create.unwrap_or_default();
