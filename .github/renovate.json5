@@ -4,12 +4,16 @@
   "prHourlyLimit": 0,
   "packageRules": [
     {
-      // auto-merge official github actions
-      "matchPackageNames": ["actions/*"],
+      // auto-merge whitelisted GitHub Action updates
       "matchManagers": ["github-actions"],
+      "matchPackageNames": [
+        "actions/*",
+        "docker/*",
+        "renovatebot/github-action"
+      ],
       "automerge": true,
       "automergeType": "branch",
       "ignoreTests": true,
-    },
+    }
   ],
 }
