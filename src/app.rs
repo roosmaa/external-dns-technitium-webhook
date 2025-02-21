@@ -1,10 +1,10 @@
+use crate::config::Config;
+use crate::technitium;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde_json::json;
 use thiserror::Error;
 use tokio::sync::RwLock;
-use crate::config::Config;
-use crate::technitium;
 
 pub struct AppState {
     pub config: Config,
@@ -42,8 +42,13 @@ impl IntoResponse for AppError {
             AppError::TechnitiumError(_) => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),
         };
 
-        (status, json!({
-            "error": error_message,
-        }).to_string()).into_response()
+        (
+            status,
+            json!({
+                "error": error_message,
+            })
+            .to_string(),
+        )
+            .into_response()
     }
 }

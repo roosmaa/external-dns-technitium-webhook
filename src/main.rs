@@ -1,12 +1,12 @@
 use app::{AppError, AppState};
 use axum::{
+    Router,
     body::{Body, Bytes},
     extract::Request,
     http::StatusCode,
     middleware::{self, Next},
     response::{IntoResponse, Response},
     routing::{get, post},
-    Router,
 };
 use config::Config;
 use http_body_util::BodyExt;
