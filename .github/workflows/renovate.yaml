@@ -20,7 +20,7 @@ jobs:
           repositories: external-dns-technitium-webhook
 
       - name: Renovate
-        uses: renovatebot/github-action@b11417b9eaac3145fe9a8544cee66503724e32b6 # v43.0.8
+        uses: renovatebot/github-action@a447f09147d00e00ae2a82ad5ef51ca89352da80 # v43.0.9
         with:
           token: ${{ steps.get_token.outputs.token  }}
         env:
