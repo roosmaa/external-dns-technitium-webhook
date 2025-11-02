@@ -16,9 +16,12 @@ The application expects all configuration to be passed in via environment variab
 | `LISTEN_PORT`         | The port the webhook server listens ono (defaults to `3000`).                                             |
 | `TECHNITIUM_URL`      | The URL of the Technitium DNS server (required).                                                          |
 | `TECHNITIUM_USERNAME` | The username to authenticate with the Technitium DNS server (required).                                   |
-| `TECHNITIUM_PASSWORD` | The password to authenticate with the Technitium DNS server (required).                                   |
+| `TECHNITIUM_PASSWORD` | The password for the user. Required when `TECHNITIUM_TOKEN` is not supplied.                              |
+| `TECHNITIUM_TOKEN`    | A pre-generated Technitium API token. When set, the webhook skips password login and reuses this token.   |
 | `ZONE`                | The zone to manage (e.g. `example.com`, required).                                                        |
 | `DOMAIN_FILTERS`      | A semicolon-separated list of domain filters to apply (e.g. `foo.example.com;bar.example.com`, optional). |
+
+Provide either `TECHNITIUM_PASSWORD` *or* `TECHNITIUM_TOKEN`. When a token is supplied, the webhook uses it directly and does not attempt to refresh credentials via the login endpoint.
 
 ### Zone Handling
 
@@ -90,7 +93,9 @@ type: Opaque
 apiVersion: v1
 stringData:
   TECHNITIUM_USERNAME: admin
-  TECHNITIUM_PASSWORD: admin
+  # Provide exactly one of the following:
+  TECHNITIUM_PASSWORD: example-password
+  # TECHNITIUM_TOKEN: example-static-token
 metadata:
   name: technitium-dns
   namespace: external-dns

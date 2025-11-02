@@ -71,59 +71,86 @@ async fn create_default_zone(app_state: &Arc<AppState>) -> Result<(), technitium
     Ok(())
 }
 
-async fn setup_technitium_connection(app_state: Arc<AppState>) {
-    // Construct the login payload using the credentials from the configuration
-    let login_payload = technitium::LoginPayload {
-        username: app_state.config.technitium_username.clone(),
-        password: app_state.config.technitium_password.clone(),
-    };
-
-    // Attempt to log in to Technitium using the login payload
-    let token = match app_state.client.read().await.login(login_payload).await {
-        Ok(resp) => resp.token,
-        Err(e) => {
-            error!("Failed to log in to Technitium DNS server: {}", e);
-            std::process::exit(1);
-        }
-    };
-
-    info!("Successfully logged into Technitium DNS server with received token.");
-    *app_state.client.write().await = technitium::TechnitiumClient::new(
-        app_state.config.technitium_url.clone(),
-        token,
-        HTTP_TIMEOUT,
-    );
-    tokio::spawn(auto_renew_technitium_token(Arc::clone(&app_state)));
-
+async fn ensure_zone_ready(app_state: &Arc<AppState>) -> Result<(), technitium::TechnitiumError> {
     debug!("Verifying and preparing the DNS Zone...");
 
-    let zone_exists = match check_zone_existence(&app_state).await {
-        Ok(ret) => ret,
-        Err(e) => {
-            error!("Failed to list zones: {}", e);
-            std::process::exit(1);
-        }
-    };
-
-    if zone_exists {
+    if check_zone_existence(app_state).await? {
         info!(
             "Zone {} exists in Technitium DNS server.",
             &app_state.config.zone
         );
-    } else {
-        if let Err(e) = create_default_zone(&app_state).await {
-            error!(
-                "Failed to create the zone {} in Technitium DNS server: {}",
-                &app_state.config.zone, e
+        return Ok(());
+    }
+
+    create_default_zone(app_state).await
+}
+
+async fn setup_technitium_connection(app_state: Arc<AppState>) {
+    if app_state.use_static_token {
+        if let Some(token) = &app_state.config.technitium_token {
+            info!("Using static Technitium API token from configuration.");
+            *app_state.client.write().await = technitium::TechnitiumClient::new(
+                app_state.config.technitium_url.clone(),
+                token.clone(),
+                HTTP_TIMEOUT,
             );
+        } else {
+            error!("TECHNITIUM_TOKEN must be configured when TECHNITIUM_PASSWORD is not set");
             std::process::exit(1);
         }
+    } else {
+        let password = match &app_state.config.technitium_password {
+            Some(password) => password.clone(),
+            None => {
+                error!("TECHNITIUM_PASSWORD must be configured when TECHNITIUM_TOKEN is not set");
+                std::process::exit(1);
+            }
+        };
+
+        let login_payload = technitium::LoginPayload {
+            username: app_state.config.technitium_username.clone(),
+            password: password.clone(),
+        };
+
+        let token = match app_state.client.read().await.login(login_payload).await {
+            Ok(resp) => resp.token,
+            Err(e) => {
+                error!("Failed to log in to Technitium DNS server: {}", e);
+                std::process::exit(1);
+            }
+        };
+
+        info!("Successfully logged into Technitium DNS server with received token.");
+        *app_state.client.write().await = technitium::TechnitiumClient::new(
+            app_state.config.technitium_url.clone(),
+            token,
+            HTTP_TIMEOUT,
+        );
+
+        let username = app_state.config.technitium_username.clone();
+        tokio::spawn(auto_renew_technitium_token(
+            Arc::clone(&app_state),
+            username,
+            password,
+        ));
+    }
+
+    if let Err(e) = ensure_zone_ready(&app_state).await {
+        error!(
+            "Failed to prepare the zone {} in Technitium DNS server: {}",
+            &app_state.config.zone, e
+        );
+        std::process::exit(1);
     }
 
     *app_state.is_ready.write().await = true;
 }
 
-async fn auto_renew_technitium_token(app_state: Arc<AppState>) {
+async fn auto_renew_technitium_token(
+    app_state: Arc<AppState>,
+    username: String,
+    password: String,
+) {
     const DURATION_SUCCESS: Duration = Duration::from_secs(20 * 60);
     const DURATION_FAILURE: Duration = Duration::from_secs(60);
 
@@ -131,13 +158,11 @@ async fn auto_renew_technitium_token(app_state: Arc<AppState>) {
     loop {
         sleep(sleep_for).await;
 
-        // Construct the login payload using the credentials from the configuration
         let login_payload = technitium::LoginPayload {
-            username: app_state.config.technitium_username.clone(),
-            password: app_state.config.technitium_password.clone(),
+            username: username.clone(),
+            password: password.clone(),
         };
 
-        // Attempt to log in to Technitium using the login payload
         let token = match app_state.client.read().await.login(login_payload).await {
             Ok(resp) => resp.token,
             Err(e) => {
@@ -170,15 +195,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let config = Config::from_env();
+    let initial_token = config.technitium_token.clone().unwrap_or_default();
     let client = technitium::TechnitiumClient::new(
         config.technitium_url.clone(),
-        Default::default(), // no token initially
+        initial_token,
         HTTP_TIMEOUT,
     );
+    let use_static_token = config.technitium_password.is_none();
     let app_state = Arc::new(AppState {
         config,
         is_ready: RwLock::new(false),
         client: RwLock::new(client),
+        use_static_token,
     });
 
     // Check and create zone if necessary
