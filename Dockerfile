@@ -1,4 +1,4 @@
-FROM rust:1.91.0-alpine AS builder
+FROM rust:1.91.1-alpine AS builder
 RUN apk add --no-cache \
     musl-dev \
     openssl-libs-static openssl-dev \
