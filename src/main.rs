@@ -36,7 +36,7 @@ async fn check_zone_existence(
     loop {
         let zones = client
             .list_zones(technitium::ListZonesPayload {
-                zone: app_state.config.zone.clone(),
+                zone: None,
                 page_number: Some(page_number),
                 zones_per_page: Some(100),
             })
@@ -82,7 +82,19 @@ async fn ensure_zone_ready(app_state: &Arc<AppState>) -> Result<(), technitium::
         return Ok(());
     }
 
-    create_default_zone(app_state).await
+    match create_default_zone(app_state).await {
+        Ok(()) => Ok(()),
+        Err(technitium::TechnitiumError::ApiError(msg))
+            if msg.to_lowercase().contains("zone already exists") =>
+        {
+            info!(
+                "Zone {} already exists in Technitium DNS server, continuing.",
+                &app_state.config.zone
+            );
+            Ok(())
+        }
+        Err(err) => Err(err),
+    }
 }
 
 async fn setup_technitium_connection(app_state: Arc<AppState>) {
