@@ -36,7 +36,8 @@ pub struct CreateZoneResponse {
 
 #[derive(Debug, Serialize, Default)]
 pub struct ListZonesPayload {
-    pub zone: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub zone: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "pageNumber")]
     pub page_number: Option<u32>,
