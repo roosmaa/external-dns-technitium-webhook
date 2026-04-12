@@ -36,7 +36,7 @@ async fn check_zone_existence(
     loop {
         let zones = client
             .list_zones(technitium::ListZonesPayload {
-                zone: app_state.config.zone.clone(),
+                zone: None,
                 page_number: Some(page_number),
                 zones_per_page: Some(100),
             })
@@ -71,6 +71,32 @@ async fn create_default_zone(app_state: &Arc<AppState>) -> Result<(), technitium
     Ok(())
 }
 
+async fn ensure_zone_ready(app_state: &Arc<AppState>) -> Result<(), technitium::TechnitiumError> {
+    debug!("Verifying and preparing the DNS Zone...");
+
+    if check_zone_existence(app_state).await? {
+        info!(
+            "Zone {} exists in Technitium DNS server.",
+            &app_state.config.zone
+        );
+        return Ok(());
+    }
+
+    match create_default_zone(app_state).await {
+        Ok(()) => Ok(()),
+        Err(technitium::TechnitiumError::ApiError(msg))
+            if msg.to_lowercase().contains("zone already exists") =>
+        {
+            info!(
+                "Zone {} already exists in Technitium DNS server, continuing.",
+                &app_state.config.zone
+            );
+            Ok(())
+        }
+        Err(err) => Err(err),
+    }
+}
+
 async fn setup_technitium_connection(app_state: Arc<AppState>) {
     // Construct the login payload using the credentials from the configuration
     let login_payload = technitium::LoginPayload {
@@ -95,29 +121,12 @@ async fn setup_technitium_connection(app_state: Arc<AppState>) {
     );
     tokio::spawn(auto_renew_technitium_token(Arc::clone(&app_state)));
 
-    debug!("Verifying and preparing the DNS Zone...");
-
-    let zone_exists = match check_zone_existence(&app_state).await {
-        Ok(ret) => ret,
-        Err(e) => {
-            error!("Failed to list zones: {}", e);
-            std::process::exit(1);
-        }
-    };
-
-    if zone_exists {
-        info!(
-            "Zone {} exists in Technitium DNS server.",
-            &app_state.config.zone
+    if let Err(e) = ensure_zone_ready(&app_state).await {
+        error!(
+            "Failed to prepare the zone {} in Technitium DNS server: {}",
+            &app_state.config.zone, e
         );
-    } else {
-        if let Err(e) = create_default_zone(&app_state).await {
-            error!(
-                "Failed to create the zone {} in Technitium DNS server: {}",
-                &app_state.config.zone, e
-            );
-            std::process::exit(1);
-        }
+        std::process::exit(1);
     }
 
     *app_state.is_ready.write().await = true;
