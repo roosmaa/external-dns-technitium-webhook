@@ -10,6 +10,7 @@ pub struct AppState {
     pub config: Config,
     pub is_ready: RwLock<bool>,
     pub client: RwLock<technitium::TechnitiumClient>,
+    pub use_static_token: bool,
 }
 
 impl AppState {

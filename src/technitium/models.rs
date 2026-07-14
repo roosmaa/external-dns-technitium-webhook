@@ -36,7 +36,8 @@ pub struct CreateZoneResponse {
 
 #[derive(Debug, Serialize, Default)]
 pub struct ListZonesPayload {
-    pub zone: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub zone: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     #[serde(rename = "pageNumber")]
     pub page_number: Option<u32>,
@@ -292,74 +293,6 @@ pub struct RecordCNAMEData {
 pub struct RecordTXTData {
     #[serde(rename = "text")]
     pub text: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct RecordAUpdate {
-    #[serde(flatten)]
-    pub current: RecordAData,
-    #[serde(rename = "newIpAddress")]
-    pub ip_address: String,
-}
-
-impl From<RecordAData> for RecordAUpdate {
-    fn from(data: RecordAData) -> Self {
-        Self {
-            current: data.clone(),
-            ip_address: data.ip_address,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct RecordAAAAUpdate {
-    #[serde(flatten)]
-    pub current: RecordAAAAData,
-    #[serde(rename = "newIpAddress")]
-    pub ip_address: String,
-}
-
-impl From<RecordAAAAData> for RecordAAAAUpdate {
-    fn from(data: RecordAAAAData) -> Self {
-        Self {
-            current: data.clone(),
-            ip_address: data.ip_address,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct RecordCNAMEUpdate {
-    #[serde(flatten)]
-    pub current: RecordCNAMEData,
-    #[serde(rename = "newCname")]
-    pub cname: String,
-}
-
-impl From<RecordCNAMEData> for RecordCNAMEUpdate {
-    fn from(data: RecordCNAMEData) -> Self {
-        Self {
-            current: data.clone(),
-            cname: data.cname,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub struct RecordTXTUpdate {
-    #[serde(flatten)]
-    pub current: RecordTXTData,
-    #[serde(rename = "newText")]
-    pub text: String,
-}
-
-impl From<RecordTXTData> for RecordTXTUpdate {
-    fn from(data: RecordTXTData) -> Self {
-        Self {
-            current: data.clone(),
-            text: data.text,
-        }
-    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, Eq, PartialEq)]
